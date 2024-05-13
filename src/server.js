@@ -24,11 +24,23 @@ initializeDatabase()
   });
 
 // helper functions 
-function createAppointmentInDatabase(data) {
-  // This would typically involve a database call like:
-  // return Database.insert('appointments', data);
-  const mockId = Math.floor(Math.random() * 10000); // Generate a mock ID for the example
-  return Promise.resolve({ id: mockId, ...data }); // Return a resolved promise with the data including an 'id'
+async function createAppointmentInDatabase(data) {
+  try {
+    const query = `
+      INSERT INTO appointments (email, appointment_date, appointment_time)
+      VALUES (?, ?, ?);
+    `;
+    const values = [data.email, data.appointment_date, data.appointment_time];
+    const [result] = await db.execute(query, values);
+    const newAppointment = {
+      id: result.insertId,  
+      ...data
+    };
+    return newAppointment;
+  } catch (error) {
+    console.error('Error creating appointment:', error);
+    throw error; // Rethrow to handle it in the route handler
+  }
 }
 
 // Example function that would interact with your database
