@@ -44,17 +44,32 @@ async function createAppointmentInDatabase(data) {
 }
 
 // Example function that would interact with your database
-function deleteAppointmentFromDatabase(id) {
+async function updateAppointmentInDatabase(id, data) {
+  const query = `
+    UPDATE appointments
+    SET appointment_date = ?, appointment_time = ?
+    WHERE id = ?;
+  `;
+
+  try {
+    const [result] = await db.execute(query, [data.appointment_date, data.appointment_time, id]);
+    if (result.affectedRows > 0) {
+        console.log('Appointment updated successfully');
+    } else {
+        console.log('No appointment found with the specified id');
+    }
+  } catch (error) {
+      console.error('Error updating appointment:', error);
+      throw error;
+  }
+}
+
+
+// Example function that would interact with your database
+async function deleteAppointmentFromDatabase(id) {
   // This would typically involve a database call like:
   // return Database.delete('appointments', id);
   return Promise.resolve( {id}); // Mocked promise for demonstration
-}
-
-// Example function that would interact with your database
-function updateAppointmentInDatabase(id, data) {
-  // This would typically involve a database call like:
-  // return Database.delete('appointments', id);
-  return Promise.resolve({ id, ...data }); // Mocked promise for demonstration
 }
 
 // home page route handler
@@ -90,7 +105,7 @@ app.get('/api/appts/:email', async (req, res) => {
 
 
 // booking page handler
-app.post('/api/appts', (req, res) => {
+app.post('/api/appts', async (req, res) => {
   const appointmentData = req.body; // Data sent from the client
   console.log(appointmentData);
 
@@ -110,7 +125,7 @@ app.post('/api/appts', (req, res) => {
 
 // reschedule page handler
 // mock the response to a database update
-app.put('/api/appts/:id', (req, res) => {
+app.put('/api/appts/:id', async (req, res) => {
   const { id } = req.params;
   const appointmentData = req.body; // data sent from the client to update the appointment
 
