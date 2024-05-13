@@ -1,12 +1,27 @@
 const express = require('express');
 const app = express();
 app.use(express.json());
+const initializeDatabase = require('../database/db');
 
 const hostname = '127.0.0.1';
 const port = 3001;
 
 const cors = require('cors');
 app.use(cors());
+
+
+// Initialize database connections 
+let db;
+
+initializeDatabase()
+  .then(pool => {
+    db = pool;
+    console.log('Database connection successfully established');
+  })
+  .catch(err => {
+    console.error('Database connection failed:', err);
+    process.exit(1); // Exit the process if the database connection fails
+  });
 
 // helper functions 
 function createAppointmentInDatabase(data) {
@@ -20,7 +35,7 @@ function createAppointmentInDatabase(data) {
 function deleteAppointmentFromDatabase(id) {
   // This would typically involve a database call like:
   // return Database.delete('appointments', id);
-  return Promise.resolve(); // Mocked promise for demonstration
+  return Promise.resolve( {id}); // Mocked promise for demonstration
 }
 
 // Example function that would interact with your database
@@ -41,23 +56,26 @@ app.get('/api/message', (req, res) => {
 });
 
 
-// get all appointments associated with an emal
-app.get('/api/appts/:email', (req, res) => {
+app.get('/api/appts/:email', async (req, res) => {
+  if (!db) {
+    return res.status(500).send('Database not initialized');
+  }
+
   try {
     const email = decodeURIComponent(req.params.email);
-    // Retrieve appts from database
+    const query = 'SELECT * FROM appointments WHERE email = ?';
+    const [appts] = await db.execute(query, [email]);
+
     res.status(200).json({
-      message: 'Appts retrieved successfully',
-      appts: [
-        { id: 1, date: "2023-10-15", time: "10:00 AM"},
-        { id: 2, date: "2023-10-20", time: "02:00 PM"}
-      ] // fetch from database later
+      message: 'Appointments retrieved successfully',
+      appts: appts
     });
   } catch (error) {
-    console.error('Failed to find appointment:', error);
+    console.error('Failed to find appointments:', error);
     res.status(500).send('Internal Server Error');
   }
 });
+
 
 // booking page handler
 app.post('/api/appts', (req, res) => {
