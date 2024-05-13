@@ -67,13 +67,25 @@ async function updateAppointmentInDatabase(id, data) {
 
 // Example function that would interact with your database
 async function deleteAppointmentFromDatabase(id) {
-  // This would typically involve a database call like:
-  // return Database.delete('appointments', id);
-  return Promise.resolve( {id}); // Mocked promise for demonstration
+  const query = `
+    DELETE FROM appointments WHERE id = ?;
+  `;
+
+  try {
+    const [result] = await db.execute(query, [id]);
+        if (result.affectedRows > 0) {
+            console.log('Appointment deleted successfully');
+        } else {
+            console.log('No appointment found with the specified ID, or it was already deleted');
+        }
+  } catch (error) {
+    console.error('Error deleting appointment:', error);
+    throw error;
+  }
 }
 
 // home page route handler
-app.get('/api/message', (req, res) => {
+app.get('/api/message', async (req, res) => {
   try {
     res.json({ message: 'Server is connected!' });
   } catch (error) {
@@ -145,7 +157,7 @@ app.put('/api/appts/:id', async (req, res) => {
 
 // cancel handler
 // mock the response to a database delete
-app.delete('/api/appts/:id', (req, res) => {
+app.delete('/api/appts/:id', async (req, res) => {
   const { id } = req.params;
   // Assuming you have a database method to delete an appointment
   deleteAppointmentFromDatabase(id)
