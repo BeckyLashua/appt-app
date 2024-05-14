@@ -27,13 +27,13 @@ initializeDatabase()
 async function createAppointmentInDatabase(data) {
   try {
     const query = `
-      INSERT INTO appointments (email, date, time)
+      INSERT INTO appointments (client_email, appt_date, appt_time)
       VALUES (?, ?, ?);
     `;
-    const values = [data.email, data.date, data.time];
+    const values = [data.client_email, data.appt_date, data.appt_time];
     const [result] = await db.execute(query, values);
     const newAppointment = {
-      id: result.insertId,  
+      appt_id: result.insertId,  
       ...data
     };
     return newAppointment;
@@ -47,12 +47,12 @@ async function createAppointmentInDatabase(data) {
 async function updateAppointmentInDatabase(id, data) {
   const query = `
     UPDATE appointments
-    SET date = ?, time = ?
-    WHERE id = ?;
+    SET appt_date = ?, appt_time = ?
+    WHERE appt_id = ?;
   `;
 
   try {
-    const [result] = await db.execute(query, [data.date, data.time, id]);
+    const [result] = await db.execute(query, [data.appt_date, data.appt_time, id]);
     if (result.affectedRows > 0) {
         console.log('Appointment updated successfully');
     } else {
@@ -68,7 +68,7 @@ async function updateAppointmentInDatabase(id, data) {
 // Example function that would interact with your database
 async function deleteAppointmentFromDatabase(id) {
   const query = `
-    DELETE FROM appointments WHERE id = ?;
+    DELETE FROM appointments WHERE appt_id = ?;
   `;
 
   try {
@@ -95,14 +95,14 @@ app.get('/api/message', async (req, res) => {
 });
 
 
-app.get('/api/appts/:email', async (req, res) => {
+app.get('/api/appts/:client_email', async (req, res) => {
   if (!db) {
     return res.status(500).send('Database not initialized');
   }
 
   try {
-    const email = decodeURIComponent(req.params.email);
-    const query = 'SELECT * FROM appointments WHERE email = ?';
+    const email = decodeURIComponent(req.params.client_email);
+    const query = 'SELECT * FROM appointments WHERE client_email = ?';
     const [appts] = await db.execute(query, [email]);
 
     res.status(200).json({
