@@ -27,10 +27,10 @@ initializeDatabase()
 async function createAppointmentInDatabase(data) {
   try {
     const query = `
-      INSERT INTO appointments (email, appointment_date, appointment_time)
+      INSERT INTO appointments (email, date, time)
       VALUES (?, ?, ?);
     `;
-    const values = [data.email, data.appointment_date, data.appointment_time];
+    const values = [data.email, data.date, data.time];
     const [result] = await db.execute(query, values);
     const newAppointment = {
       id: result.insertId,  
@@ -47,12 +47,12 @@ async function createAppointmentInDatabase(data) {
 async function updateAppointmentInDatabase(id, data) {
   const query = `
     UPDATE appointments
-    SET appointment_date = ?, appointment_time = ?
+    SET date = ?, time = ?
     WHERE id = ?;
   `;
 
   try {
-    const [result] = await db.execute(query, [data.appointment_date, data.appointment_time, id]);
+    const [result] = await db.execute(query, [data.date, data.time, id]);
     if (result.affectedRows > 0) {
         console.log('Appointment updated successfully');
     } else {
