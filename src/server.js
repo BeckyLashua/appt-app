@@ -55,6 +55,7 @@ async function updateAppointmentInDatabase(id, data) {
     const [result] = await db.execute(query, [data.appt_date, data.appt_time, id]);
     if (result.affectedRows > 0) {
         console.log('Appointment updated successfully');
+        return { id, ...data };
     } else {
         console.log('No appointment found with the specified id');
     }
@@ -137,7 +138,7 @@ app.post('/api/appts', async (req, res) => {
 
 // reschedule page handler
 // mock the response to a database update
-app.put('/api/appts/:id', async (req, res) => {
+app.patch('/api/appts/:id', async (req, res) => {
   const { id } = req.params;
   const appointmentData = req.body; // data sent from the client to update the appointment
 
@@ -146,7 +147,7 @@ app.put('/api/appts/:id', async (req, res) => {
       .then(updatedAppointment => {
           res.json({
               message: 'Appointment updated successfully',
-              updatedAppointment
+              appointment: updatedAppointment
           });
       })
       .catch(error => {
