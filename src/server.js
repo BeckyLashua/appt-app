@@ -40,7 +40,6 @@ async function isApptAvailable(connection, startTime, endTime) {
 
 
 async function createAppointmentInDatabase(data) {
-  console.log(data.start_time);
   const formattedStartTime = moment(data.start_time, 'HH:mm').format('HH:mm');
   const endTime = moment(data.start_time, 'HH:mm').add(30, 'minutes').format('HH:mm');
   await db.beginTransaction;
@@ -158,13 +157,16 @@ app.post('/api/appts', async (req, res) => {
   createAppointmentInDatabase(appointmentData)
       .then(newAppointment => {
           res.status(201).json({
-              message: 'Appointment created successfully',
+              message: 'Congratulations! You have successfully booked this appointment!',
               appointment: newAppointment
           });
       })
       .catch(error => {
-          console.error('Failed to create appointment:', error);
-          res.status(500).send('Internal Server Error');
+        if (error.message === 'Sorry. This appointment time is already booked. Choose another time.') {
+          res.status(409).json({ message: error.message });
+        } else {
+            res.status(500).json({ message: 'An error occurred while creating this appointment.' });
+        }
       });
 });
 
