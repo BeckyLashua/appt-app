@@ -27,14 +27,14 @@ initializeDatabase()
 
 // helper functions 
 
-async function isApptAvailable(connection, startTime, endTime) {
+async function isApptAvailable(connection, apptDate, startTime, endTime) {
   const query = `
     SELECT COUNT(*) as count
     FROM appointments
-    WHERE (start_time < ? AND end_time > ?)
+    WHERE appt_date = ? AND (start_time <= ? AND end_time >= ?)
   `; 
 
-  const [rows] = await connection.execute(query, [endTime, startTime]);
+  const [rows] = await connection.execute(query, [apptDate, endTime, startTime]);
   return rows[0].count == 0;
 }
 
@@ -45,7 +45,7 @@ async function createAppointmentInDatabase(data) {
   await db.beginTransaction;
 
   try {
-    const available = await isApptAvailable(db, formattedStartTime, endTime);
+    const available = await isApptAvailable(db, data.appt_date, formattedStartTime, endTime);
     if (!available) {throw new Error('The appointment time is already booked.');}
     
     const query = `
@@ -81,7 +81,7 @@ async function updateAppointmentInDatabase(id, data) {
   `;
 
   try {
-    const available = await isApptAvailable(db, formattedStartTime, endTime);
+    const available = await isApptAvailable(db, data.appt_date, formattedStartTime, endTime);
     if (!available) {throw new Error('The appointment time is already booked.');}
     
     const [result] = await db.execute(query, [data.appt_date, formattedStartTime, endTime, id]);
@@ -162,10 +162,10 @@ app.post('/api/appts', async (req, res) => {
           });
       })
       .catch(error => {
-        if (error.message === 'Sorry. This appointment time is already booked. Choose another time.') {
-          res.status(409).json({ message: error.message });
+        if (error.message === 'The appointment time is already booked.') {
+          res.status(409).json({ message: 'Sorry. This appointment time is already booked. Choose another time.' });
         } else {
-            res.status(500).json({ message: 'An error occurred while creating this appointment.' });
+          res.status(500).json({ message: 'An error occurred while creating this appointment.' });
         }
       });
 });
