@@ -1,4 +1,5 @@
 const express = require('express');
+const moment = require('moment');
 const app = express();
 app.use(express.json());
 const initializeDatabase = require('../database/db');
@@ -23,19 +24,44 @@ initializeDatabase()
     process.exit(1); // Exit the process if the database connection fails
   });
 
+
 // helper functions 
+
+async function isApptAvailable(connection, startTime, endTime) {
+  const query = `
+    SELECT COUNT(*) as count
+    FROM appointments
+    WHERE (start_time < ? AND end_time > ?)
+  `; 
+
+  const [rows] = await connection.execute(query, [endTime, startTime]);
+  return rows[0].count == 0;
+}
+
+
 async function createAppointmentInDatabase(data) {
+  console.log(data.start_time);
+  const formattedStartTime = moment(data.start_time, 'HH:mm').format('HH:mm');
+  const endTime = moment(data.start_time, 'HH:mm').add(30, 'minutes').format('HH:mm');
+  await db.beginTransaction;
+
   try {
+    const available = await isApptAvailable(db, formattedStartTime, endTime);
+    if (!available) {throw new Error('The appointment time is already booked.');}
+    
     const query = `
-      INSERT INTO appointments (client_email, appt_date, appt_time)
-      VALUES (?, ?, ?);
+      INSERT INTO appointments (client_email, appt_date, start_time, end_time)
+      VALUES (?, ?, ?, ?);
     `;
-    const values = [data.client_email, data.appt_date, data.appt_time];
+
+    const values = [data.client_email, data.appt_date, formattedStartTime, endTime];
     const [result] = await db.execute(query, values);
+
     const newAppointment = {
       appt_id: result.insertId,  
       ...data
     };
+    
     return newAppointment;
   } catch (error) {
     console.error('Error creating appointment:', error);
@@ -43,16 +69,16 @@ async function createAppointmentInDatabase(data) {
   }
 }
 
-// Example function that would interact with your database
+
 async function updateAppointmentInDatabase(id, data) {
   const query = `
     UPDATE appointments
-    SET appt_date = ?, appt_time = ?
+    SET appt_date = ?, start_time = ?
     WHERE appt_id = ?;
   `;
 
   try {
-    const [result] = await db.execute(query, [data.appt_date, data.appt_time, id]);
+    const [result] = await db.execute(query, [data.appt_date, data.start_time, id]);
     if (result.affectedRows > 0) {
         console.log('Appointment updated successfully');
         return { id, ...data };
@@ -66,7 +92,6 @@ async function updateAppointmentInDatabase(id, data) {
 }
 
 
-// Example function that would interact with your database
 async function deleteAppointmentFromDatabase(id) {
   const query = `
     DELETE FROM appointments WHERE appt_id = ?;
