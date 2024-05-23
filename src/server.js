@@ -71,14 +71,21 @@ async function createAppointmentInDatabase(data) {
 
 
 async function updateAppointmentInDatabase(id, data) {
+  const formattedStartTime = moment(data.start_time, 'HH:mm').format('HH:mm');
+  const endTime = moment(data.start_time, 'HH:mm').add(30, 'minutes').format('HH:mm');
+  await db.beginTransaction;
+
   const query = `
     UPDATE appointments
-    SET appt_date = ?, start_time = ?
+    SET appt_date = ?, start_time = ?, end_time = ?
     WHERE appt_id = ?;
   `;
 
   try {
-    const [result] = await db.execute(query, [data.appt_date, data.start_time, id]);
+    const available = await isApptAvailable(db, formattedStartTime, endTime);
+    if (!available) {throw new Error('The appointment time is already booked.');}
+    
+    const [result] = await db.execute(query, [data.appt_date, formattedStartTime, endTime, id]);
     if (result.affectedRows > 0) {
         console.log('Appointment updated successfully');
         return { id, ...data };
