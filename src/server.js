@@ -50,11 +50,11 @@ async function createAppointmentInDatabase(data) {
     if (!available) {throw new Error('The appointment time is already booked.');}
     
     const query = `
-      INSERT INTO appointments (client_email, appt_date, start_time, end_time)
-      VALUES (?, ?, ?, ?);
+      INSERT INTO appointments (client_email, appt_date, start_time, end_time, client_first_name, client_last_name)
+      VALUES (?, ?, ?, ?, ?, ?);
     `;
 
-    const values = [data.client_email, data.appt_date, formattedStartTime, endTime];
+    const values = [data.client_email, data.appt_date, formattedStartTime, endTime, data.client_first_name, data.client_last_name];
     const [result] = await pool.execute(query, values);
 
     const newAppointment = {
@@ -160,9 +160,9 @@ app.post('/api/appts', async (req, res) => {
       })
       .catch(error => {
         if (error.message === 'The appointment time is already booked.') {
-          res.status(409).json({ message: 'Sorry. This appointment time is already booked. Choose another time.' });
+          res.status(409).json();
         } else {
-          res.status(500).json({ message: 'An error occurred while creating this appointment.' });
+          res.status(500).json();
         }
       });
 });
