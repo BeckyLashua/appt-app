@@ -1,8 +1,11 @@
 const express = require('express');
 const moment = require('moment');
+const mysql = require('mysql2/promise');
+
+const initializeDatabase = require('../database/db');
+
 const app = express();
 app.use(express.json());
-const initializeDatabase = require('../database/db');
 
 const hostname = '127.0.0.1';
 const port = 3001;
@@ -10,19 +13,17 @@ const port = 3001;
 const cors = require('cors');
 app.use(cors());
 
+const pool = mysql.createPool({
+  host: 'localhost',
+  user: 'root',
+  port: '3306',
+  password: 'Orphan718', 
+  database: 'booking_system', 
+  waitForConnections: true,
+  connectionLimit: 10, 
+  queueLimit: 0
+});
 
-// Initialize database connections 
-let db;
-
-initializeDatabase()
-  .then(pool => {
-    db = pool;
-    console.log('Database connection successfully established');
-  })
-  .catch(err => {
-    console.error('Database connection failed:', err);
-    process.exit(1); // Exit the process if the database connection fails
-  });
 
 
 // helper functions 
@@ -128,14 +129,10 @@ app.get('/api/message', async (req, res) => {
 
 
 app.get('/api/appts/:client_email', async (req, res) => {
-  if (!db) {
-    return res.status(500).send('Database not initialized');
-  }
-
   try {
     const email = decodeURIComponent(req.params.client_email);
     const query = 'SELECT * FROM appointments WHERE client_email = ?';
-    const [appts] = await db.execute(query, [email]);
+    const [appts] = await pool.query(query, [email]);
 
     res.status(200).json({
       message: 'Appointments retrieved successfully',
@@ -144,7 +141,7 @@ app.get('/api/appts/:client_email', async (req, res) => {
   } catch (error) {
     console.error('Failed to find appointments:', error);
     res.status(500).send('Internal Server Error');
-  }
+  } 
 });
 
 
@@ -206,8 +203,11 @@ app.delete('/api/appts/:id', async (req, res) => {
 });
 
 
-
-// Start the server
-app.listen(port, hostname, () => {
-  console.log(`Server running at http://${hostname}:${port}/`);
+initializeDatabase().then(() => {
+  app.listen(port, () => {
+      console.log(`Server running at http://${hostname}:${port}/`);
+  });
+}).catch(err => {
+  console.error('Failed to initialize database:', err);
+  process.exit(1); 
 });
