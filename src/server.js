@@ -43,10 +43,10 @@ async function isApptAvailable(connection, apptDate, startTime, endTime) {
 async function createAppointmentInDatabase(data) {
   const formattedStartTime = moment(data.start_time, 'HH:mm').format('HH:mm');
   const endTime = moment(data.start_time, 'HH:mm').add(30, 'minutes').format('HH:mm');
-  await db.beginTransaction;
+  await pool.beginTransaction;
 
   try {
-    const available = await isApptAvailable(db, data.appt_date, formattedStartTime, endTime);
+    const available = await isApptAvailable(pool, data.appt_date, formattedStartTime, endTime);
     if (!available) {throw new Error('The appointment time is already booked.');}
     
     const query = `
@@ -55,7 +55,7 @@ async function createAppointmentInDatabase(data) {
     `;
 
     const values = [data.client_email, data.appt_date, formattedStartTime, endTime];
-    const [result] = await db.execute(query, values);
+    const [result] = await pool.execute(query, values);
 
     const newAppointment = {
       appt_id: result.insertId,  
@@ -73,7 +73,7 @@ async function createAppointmentInDatabase(data) {
 async function updateAppointmentInDatabase(id, data) {
   const formattedStartTime = moment(data.start_time, 'HH:mm').format('HH:mm');
   const endTime = moment(data.start_time, 'HH:mm').add(30, 'minutes').format('HH:mm');
-  await db.beginTransaction;
+  await pool.beginTransaction;
 
   const query = `
     UPDATE appointments
@@ -82,10 +82,10 @@ async function updateAppointmentInDatabase(id, data) {
   `;
 
   try {
-    const available = await isApptAvailable(db, data.appt_date, formattedStartTime, endTime);
+    const available = await isApptAvailable(pool, data.appt_date, formattedStartTime, endTime);
     if (!available) {throw new Error('The appointment time is already booked.');}
     
-    const [result] = await db.execute(query, [data.appt_date, formattedStartTime, endTime, id]);
+    const [result] = await pool.execute(query, [data.appt_date, formattedStartTime, endTime, id]);
     if (result.affectedRows > 0) {
         console.log('Appointment updated successfully');
         return { id, ...data };
@@ -105,7 +105,7 @@ async function deleteAppointmentFromDatabase(id) {
   `;
 
   try {
-    const [result] = await db.execute(query, [id]);
+    const [result] = await pool.execute(query, [id]);
         if (result.affectedRows > 0) {
             console.log('Appointment deleted successfully');
         } else {
