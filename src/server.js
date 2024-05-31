@@ -182,8 +182,11 @@ app.patch('/api/appts/:id', async (req, res) => {
           });
       })
       .catch(error => {
-          console.error('Failed to update appointment:', error);
-          res.status(500).send('Internal Server Error');
+        if (error.message === 'The appointment time is already booked.') {
+          res.status(409).json({ message: 'Sorry. This appointment time is already booked. Choose another time.' });
+        } else {
+          res.status(500).json({ message: 'An error occurred while attempting to reschedule this appointment.' });
+        }
       });
 });
 
