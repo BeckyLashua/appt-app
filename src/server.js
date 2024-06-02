@@ -43,6 +43,7 @@ async function isApptAvailable(connection, apptDate, startTime, endTime) {
 async function createAppointmentInDatabase(data) {
   const formattedStartTime = moment(data.start_time, 'HH:mm').format('HH:mm');
   const endTime = moment(data.start_time, 'HH:mm').add(30, 'minutes').format('HH:mm');
+  const formattedPhone = data.client_phone.replace(/-/g, '')
   await pool.beginTransaction;
 
   try {
@@ -54,7 +55,7 @@ async function createAppointmentInDatabase(data) {
       VALUES (?, ?, ?, ?, ?, ?, ?);
     `;
 
-    const values = [data.client_email, data.appt_date, formattedStartTime, endTime, data.client_phone, data.client_first_name, data.client_last_name];
+    const values = [data.client_email, data.appt_date, formattedStartTime, endTime, formattedPhone, data.client_first_name, data.client_last_name];
     const [result] = await pool.execute(query, values);
 
     const newAppointment = {
@@ -148,7 +149,7 @@ app.get('/api/appts/:client_email', async (req, res) => {
 // booking page handler
 app.post('/api/appts', async (req, res) => {
   const appointmentData = req.body; // Data sent from the client
-  console.log(appointmentData);
+  //console.log(appointmentData);
 
   // Simulate database insertion and generate a mock ID
   createAppointmentInDatabase(appointmentData)
