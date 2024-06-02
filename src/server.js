@@ -41,12 +41,15 @@ async function isApptAvailable(connection, apptDate, startTime, endTime) {
 
 
 async function createAppointmentInDatabase(data) {
+  const currentDateTime = new Date();
+  const apptDateTime = new Date(`${data.appt_date}T${data.start_time}`);
   const formattedStartTime = moment(data.start_time, 'HH:mm').format('HH:mm');
   const endTime = moment(data.start_time, 'HH:mm').add(30, 'minutes').format('HH:mm');
   const formattedPhone = data.client_phone.replace(/-/g, '')
   await pool.beginTransaction;
 
   try {
+    if (apptDateTime < currentDateTime) {throw new Error('The appointment date and time has passed.');}
     const available = await isApptAvailable(pool, data.appt_date, formattedStartTime, endTime);
     if (!available) {throw new Error('The appointment time is already booked.');}
     
@@ -72,6 +75,8 @@ async function createAppointmentInDatabase(data) {
 
 
 async function updateAppointmentInDatabase(id, data) {
+  const currentDateTime = new Date();
+  const apptDateTime = new Date(`${data.appt_date}T${data.start_time}`);
   const formattedStartTime = moment(data.start_time, 'HH:mm').format('HH:mm');
   const endTime = moment(data.start_time, 'HH:mm').add(30, 'minutes').format('HH:mm');
   await pool.beginTransaction;
@@ -83,6 +88,7 @@ async function updateAppointmentInDatabase(id, data) {
   `;
 
   try {
+    if (apptDateTime < currentDateTime) {throw new Error('The appointment date and time has passed.');}
     const available = await isApptAvailable(pool, data.appt_date, formattedStartTime, endTime);
     if (!available) {throw new Error('The appointment time is already booked.');}
     
@@ -151,7 +157,6 @@ app.post('/api/appts', async (req, res) => {
   const appointmentData = req.body; // Data sent from the client
   //console.log(appointmentData);
 
-  // Simulate database insertion and generate a mock ID
   createAppointmentInDatabase(appointmentData)
       .then(newAppointment => {
           res.status(201).json({
@@ -162,9 +167,9 @@ app.post('/api/appts', async (req, res) => {
       .catch(error => {
         if (error.message === 'The appointment time is already booked.') {
           res.status(409).json();
-        } else {
-          res.status(500).json();
-        }
+        } else if (error.message === 'The appointment date and time has passed.') {
+          res.status(400).json();
+        } else {res.status(500).json();}
       });
 });
 
@@ -184,10 +189,10 @@ app.patch('/api/appts/:id', async (req, res) => {
       })
       .catch(error => {
         if (error.message === 'The appointment time is already booked.') {
-          res.status(409).json({ message: 'Sorry. This appointment time is already booked. Choose another time.' });
-        } else {
-          res.status(500).json({ message: 'An error occurred while attempting to reschedule this appointment.' });
-        }
+          res.status(409).json();
+        } else if (error.message === 'The appointment date and time has passed.') {
+          res.status(400).json();
+        } else {res.status(500).json();}
       });
 });
 
