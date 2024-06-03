@@ -24,9 +24,7 @@ const pool = mysql.createPool({
   queueLimit: 0
 });
 
-
-
-// helper functions 
+ 
 
 async function isApptAvailable(connection, apptDate, startTime, endTime) {
   const query = `
@@ -124,7 +122,6 @@ async function deleteAppointmentFromDatabase(id) {
   }
 }
 
-// home page route handler
 app.get('/api/message', async (req, res) => {
   try {
     res.json({ message: 'Server is connected!' });
@@ -152,9 +149,8 @@ app.get('/api/appts/:client_email', async (req, res) => {
 });
 
 
-// booking page handler
 app.post('/api/appts', async (req, res) => {
-  const appointmentData = req.body; // Data sent from the client
+  const appointmentData = req.body; 
   //console.log(appointmentData);
 
   createAppointmentInDatabase(appointmentData)
@@ -173,13 +169,11 @@ app.post('/api/appts', async (req, res) => {
       });
 });
 
-// reschedule page handler
-// mock the response to a database update
+
 app.patch('/api/appts/:id', async (req, res) => {
   const { id } = req.params;
-  const appointmentData = req.body; // data sent from the client to update the appointment
+  const appointmentData = req.body; 
 
-  // Assuming you have a database method to update an appointment
   updateAppointmentInDatabase(id, appointmentData)
       .then(updatedAppointment => {
           res.json({
@@ -196,11 +190,8 @@ app.patch('/api/appts/:id', async (req, res) => {
       });
 });
 
-// cancel handler
-// mock the response to a database delete
 app.delete('/api/appts/:id', async (req, res) => {
   const { id } = req.params;
-  // Assuming you have a database method to delete an appointment
   deleteAppointmentFromDatabase(id)
     .then(() => {
         res.send(`Appointment with id ${id} deleted successfully`);
